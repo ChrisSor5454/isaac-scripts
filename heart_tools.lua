@@ -135,21 +135,128 @@ end
 function ht.GetHeartInfo(player, heartIndex)
     local heartTable = ht.GetHeartTable(player)
     local heart = heartTable[tonumber(heartIndex)]
-    --if heart == nil then error("Not a valid heart", 2) end
     local heartInfo = {}
-    if heart & heartType.red == heartType.red then heartInfo.type = "red"
+    if heart == nil then print("[ERROR] Not a valid heart") return heartInfo end
+
+    if heart & heartType.black == heartType.black then heartInfo.type = "black"
     elseif heart & heartType.soul == heartType.soul then heartInfo.type = "soul"
     elseif heart & heartType.bone == heartType.bone then heartInfo.type = "bone"
-    else heart.type = "broken" end
+    elseif heart & heartType.soul == heartType.soul and heart & heartType.rotten == heartType.rotten then heartInfo.type = "broken"
+    else heartInfo.type = "red" end
 
-    if heart & heartType.empty == heartType.empty then heartInfo.state = "empty"
-    elseif heart & heartType.half == heartType.half then heartInfo.state = "half"
+    
+    if heart & heartType.half == heartType.half then heartInfo.state = "half"
     elseif heart & heartType.full == heartType.full then heartInfo.state = "full"
-    else heart.state = "rotten" end
+    elseif heart & heartType.rotten == heartType.rotten then heartInfo.state = "rotten"
+    elseif heart & heartType.soul == heartType.soul and heart & heartType.rotten == heartType.rotten then heartInfo.state = "broken"
+    else heartInfo.state = "empty" end
 
     heartInfo.eternal = (heart & heartType.eternal == heartType.eternal)
     heartInfo.golden = (heart & heartType.golden == heartType.golden)
     return heartInfo
+end
+
+
+--Returns table with information about a heart based on on the provided enumerated value
+---@param heartVal integer integer containing heart information
+---@return table heartInfo table holding information about the heart
+function ht.GetHeartInfoFromInt(heartVal)
+    local heart = heartVal
+    local heartInfo = {}
+    
+    if heart & heartType.black == heartType.black then heartInfo.type = "black"
+    elseif heart & heartType.soul == heartType.soul then heartInfo.type = "soul"
+    elseif heart & heartType.bone == heartType.bone then heartInfo.type = "bone"
+    elseif heart & heartType.soul == heartType.soul and heart & heartType.rotten == heartType.rotten then heartInfo.type = "broken"
+    else heartInfo.type = "red" end
+
+    
+    if heart & heartType.half == heartType.half then heartInfo.state = "half"
+    elseif heart & heartType.full == heartType.full then heartInfo.state = "full"
+    elseif heart & heartType.rotten == heartType.rotten then heartInfo.state = "rotten"
+    elseif heart & heartType.soul == heartType.soul and heart & heartType.rotten == heartType.rotten then heartInfo.state = "broken"
+    else heartInfo.state = "empty" end
+
+    heartInfo.eternal = (heart & heartType.eternal == heartType.eternal)
+    heartInfo.golden = (heart & heartType.golden == heartType.golden)
+    return heartInfo
+end
+
+
+--Returns number of black hearts in a heartTable
+---@param heartTable table hearTable to evaluate
+---@return integer numBlackHearts number of black hearts found (1 = 1/2 black heart)
+function ht.GetNumBlackHearts(heartTable)
+    local numBlackHearts = 0
+    for i,heart in ipairs(heartTable) do
+        if heart.type == "black" then
+            if heart.state == "half" then numBlackHearts = numBlackHearts + 1
+            elseif heart.state == "full" then numBlackHearts = numBlackHearts + 2 end
+        end
+    end
+    return numBlackHearts
+end
+
+
+--Removes all of a players hearts
+---@param player EntityPlayer player whos hearts to wipe
+function ht.WipeHearts(player)
+    local maxRedHearts = player:GetMaxHearts() --Number of red heart containers, with 2 == 1 heart container
+    local soulHearts = player:GetSoulHearts() --Current number of soul hearts, with 1 == half a heart
+    local boneHearts = player:GetBoneHearts() --Current number of bone hearts, with 1 == 1 full heart (man I love consistency)
+    local goldenHearts = player:GetGoldenHearts() --Current number of golden hearts
+    local eternalHearts = player:GetEternalHearts() --Current number of eternal hearts, with 1 == 1/2 eternal heart (Not sure it's even possible to have more than 1)
+    player:AddBlackHearts(-soulHearts) --All of these just remove all the hearts identified above
+    player:AddSoulHearts(-soulHearts)
+    player:AddMaxHearts(-maxRedHearts)
+    player:AddBoneHearts(-boneHearts)
+    player:AddGoldenHearts(-goldenHearts)
+    player:AddEternalHearts(-eternalHearts)
+end
+
+
+--Restores player hearts from given table
+---@param player EntityPlayer target player
+---@param heartTable table table containing heart information
+---@param additive? boolean set to false if the the players current hearts should be replaced, true if they should be added
+---@param before? boolean if additive is true, set to true for previous hearts to be added before current hearts. Defaults to false
+function ht.RestoreHearts(player, heartTable, additive, before)
+    local tempHeartTable
+    if additive == true and before == true then
+        tempHeartTable = ht.GetHeartTable(player) --Stores current hearts to be added later
+        ht.WipeHearts(player) --Removes all hearts
+    end
+    if additive == false then
+        ht.WipeHearts(player) --Removes all hearts
+    end
+    for i,heartNum in ipairs(heartTable) do
+        local heart = ht.GetHeartInfoFromInt(heartNum)
+        --Checks the data about the given heart and adds it to the player
+        if heart.type == "broken" then player:AddBrokenHearts(1)
+        elseif heart.state == "empty" then
+                if heart.type == "red" then player:AddMaxHearts(2) end
+                if heart.type == "bone" then player:AddBoneHearts(1) end
+        elseif heart.state == "half" then
+                if heart.type == "red" then player:AddMaxHearts(2); player:AddHearts(1) end
+                if heart.type == "soul" then player:AddSoulHearts(1) end
+                if heart.type == "black" then player:AddBlackHearts(1) end
+                if heart.type == "bone" then player:AddBoneHearts(1); player:AddHearts(1) end
+        elseif heart.state == "full" then
+            if heart.type == "red" then player:AddMaxHearts(2); player:AddHearts(2) end
+            if heart.type == "soul" then player:AddSoulHearts(2) end
+            if heart.type == "black" then player:AddBlackHearts(2) end
+            if heart.type == "bone" then player:AddBoneHearts(1); player:AddHearts(2) end
+        elseif heart.state == "rotten" then
+            if heart.type == "red" then player:AddMaxHearts(2); player:AddRottenHearts(1) end
+            if heart.type == "bone" then player:AddBoneHearts(1); player:AddRottenHearts(1) end
+        end
+        if heart.eternal == true then player:AddEternalHearts(1) end
+        if heart.golden == true then player:AddGoldenHearts(1) end
+    end
+    --If additive is true and before is true, then this appends the current hearts at the end of the restored ones
+    if additive == true and before == true then
+        ht.RestoreHearts(player, tempHeartTable, true, false)
+    end
 end
 
 return ht
