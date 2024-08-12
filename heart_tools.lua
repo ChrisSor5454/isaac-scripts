@@ -24,7 +24,7 @@ local heartType = {
 --Converts players hearts into a table storing the type and state of each heart
 ---@param player EntityPlayer --player who's HeartString to return
 ---@return table playerHeartTable --table containing players heart data. Each enumeration stores the exact details of the players hearts, and its position in the table is its ID in the players health bar
-function ht:GetHeartTable(player)
+function ht.GetHeartTable(player)
     local playerHeartTable = {} --Table to store the player's heart data
     local maxRedHearts = player:GetMaxHearts() --Number of red heart containers, with 2 == 1 heart container
     local soulHearts = player:GetSoulHearts() --Current number of soul hearts, with 1 == half a heart
@@ -132,8 +132,8 @@ end
 ---@param player EntityPlayer player who's heart is being evaluated
 ---@param heartIndex integer starting from 1, heart to be evaluated
 ---@return table heartInfo table holding information about the heart
-function ht:GetHeartInfo(player, heartIndex)
-    local heartTable = ht:GetHeartTable(player)
+function ht.GetHeartInfo(player, heartIndex)
+    local heartTable = ht.GetHeartTable(player)
     local heart = heartTable[tonumber(heartIndex)]
     --if heart == nil then error("Not a valid heart", 2) end
     local heartInfo = {}
@@ -151,3 +151,5 @@ function ht:GetHeartInfo(player, heartIndex)
     heartInfo.golden = (heart & heartType.golden == heartType.golden)
     return heartInfo
 end
+
+return ht
