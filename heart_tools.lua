@@ -79,7 +79,7 @@ function ht.GetHeartTable(player)
             else
                 addHeart = addHeart | heartType.empty
             end
-        else
+        elseif heart & heartType.black == heartType.black then heartInfo.type = "black"
             addHeart = heartType.soul --Adds soul heart
             if soulHeartCount >= 2 then --Checks if it's a full or half soul heart
                 addHeart = addHeart | heartType.full
@@ -93,7 +93,7 @@ function ht.GetHeartTable(player)
     end
     index = 1+maxRedHearts//2 --I dont really feel like explaining why or how I ended up with these values, it was basically just trial and error and I already forget how I did it
     for i = 1, soulHearts, 2 do --Iterates through soul hearts, swapping to black when appropriate and skipping bone hearts (why did they decide to code the indexes this way i stg)
-        if playerHeartTable[index] & heartType.bone == heartType.bone then index = index + 1 end --Since bone hearts are not countd, this will resync the index with the "game index"
+        if playerHeartTable[index] & heartType.bone == heartType.bone then index = index + 1 end --Since bone hearts are not counted, this will resync the index with the "game index"
         if player:IsBlackHeart(i) then --Index starts at 1, bone hearts are not counted. Soul hearts count as 1 for each half, black hearts are the same but only the first half returns as a black heart
             playerHeartTable[index] = playerHeartTable[index] | heartType.black --Swaps heart enum to black
         end
@@ -128,39 +128,11 @@ function ht.GetHeartTable(player)
     return playerHeartTable
 end
 
---Returns table with information about a heart based on its index
----@param player EntityPlayer player who's heart is being evaluated
----@param heartIndex integer starting from 1, heart to be evaluated
----@return table heartInfo table holding information about the heart
-function ht.GetHeartInfo(player, heartIndex)
-    local heartTable = ht.GetHeartTable(player)
-    local heart = heartTable[tonumber(heartIndex)]
-    local heartInfo = {}
-    if heart == nil then print("[ERROR] Not a valid heart") return heartInfo end
-
-    if heart & heartType.black == heartType.black then heartInfo.type = "black"
-    elseif heart & heartType.soul == heartType.soul then heartInfo.type = "soul"
-    elseif heart & heartType.bone == heartType.bone then heartInfo.type = "bone"
-    elseif heart & heartType.soul == heartType.soul and heart & heartType.rotten == heartType.rotten then heartInfo.type = "broken"
-    else heartInfo.type = "red" end
-
-    
-    if heart & heartType.half == heartType.half then heartInfo.state = "half"
-    elseif heart & heartType.full == heartType.full then heartInfo.state = "full"
-    elseif heart & heartType.rotten == heartType.rotten then heartInfo.state = "rotten"
-    elseif heart & heartType.soul == heartType.soul and heart & heartType.rotten == heartType.rotten then heartInfo.state = "broken"
-    else heartInfo.state = "empty" end
-
-    heartInfo.eternal = (heart & heartType.eternal == heartType.eternal)
-    heartInfo.golden = (heart & heartType.golden == heartType.golden)
-    return heartInfo
-end
-
 
 --Returns table with information about a heart based on on the provided enumerated value
 ---@param heartVal integer integer containing heart information
 ---@return table heartInfo table holding information about the heart
-function ht.GetHeartInfoFromInt(heartVal)
+function ht.GetHeartInfo(heartVal)
     local heart = heartVal
     local heartInfo = {}
     
@@ -183,15 +155,43 @@ function ht.GetHeartInfoFromInt(heartVal)
 end
 
 
+--Returns table with information about a heart based on its index
+---@param player EntityPlayer player who's heart is being evaluated
+---@param heartIndex? integer starting from 1, heart to be evaluated. Leave as nil to return info table for all hearts
+---@return table heartInfo table holding information about the heart
+function ht.GetPlayerHeartInfo(player, heartIndex)
+    local heartTable = ht.GetHeartTable(player)
+    local heartInfoTable = {}
+    if heartIndex ~= nil then
+        local heart = heartTable[tonumber(heartIndex)]
+        if heart == nil then print("[ERROR] Not a valid heart") return heartInfoTable end
+        heartInfoTable = ht.GetHeartInfo(heart)
+    else
+        for i,heart in heartTable do
+            local heartInfo = ht.GetHeartInfo(heart)
+            table.insert(heartInfoTable, i, heartInfo)
+        end
+    end
+    return heartInfoTable
+end
+
+
 --Returns number of black hearts in a heartTable
----@param heartTable table hearTable to evaluate
+---@param heartTable table heartTable to evaluate. Can be heartInfoTable or enumerated heartTable
 ---@return integer numBlackHearts number of black hearts found (1 = 1/2 black heart)
 function ht.GetNumBlackHearts(heartTable)
     local numBlackHearts = 0
     for i,heart in ipairs(heartTable) do
-        if heart.type == "black" then
-            if heart.state == "half" then numBlackHearts = numBlackHearts + 1
-            elseif heart.state == "full" then numBlackHearts = numBlackHearts + 2 end
+        if type(heart) == "int" then
+            if heart & heartType.black == heartType.black then
+                if heart & heartType.half == heartType.half then numBlackHearts = numBlackHearts + 1
+                elseif heart & heartType.full == heartType.full then numBlackHearts = numBlackHearts + 2 end
+            end
+        elseif type(heart) == "table" then
+            if heart.type == "black" then
+                if heart.state == "half" then numBlackHearts = numBlackHearts + 1
+                elseif heart.state == "full" then numBlackHearts = numBlackHearts + 2 end
+            end
         end
     end
     return numBlackHearts
