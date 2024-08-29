@@ -79,7 +79,7 @@ function ht.GetHeartTable(player)
             else
                 addHeart = addHeart | heartType.empty
             end
-        elseif heart & heartType.black == heartType.black then heartInfo.type = "black"
+        else
             addHeart = heartType.soul --Adds soul heart
             if soulHeartCount >= 2 then --Checks if it's a full or half soul heart
                 addHeart = addHeart | heartType.full
@@ -167,7 +167,7 @@ function ht.GetPlayerHeartInfo(player, heartIndex)
         if heart == nil then print("[ERROR] Not a valid heart") return heartInfoTable end
         heartInfoTable = ht.GetHeartInfo(heart)
     else --If a specific heartIndex was not provided, creates table containing subtables of info for all hearts
-        for i,heart in heartTable do
+        for i,heart in ipairs(heartTable) do
             local heartInfo = ht.GetHeartInfo(heart)
             table.insert(heartInfoTable, i, heartInfo)
         end
@@ -182,7 +182,7 @@ end
 function ht.GetNumBlackHearts(heartTable)
     local numBlackHearts = 0
     for i,heart in ipairs(heartTable) do
-        if type(heart) == "int" then
+        if type(heart) == "number" then
             if heart & heartType.black == heartType.black then
                 if heart & heartType.half == heartType.half then numBlackHearts = numBlackHearts + 1
                 elseif heart & heartType.full == heartType.full then numBlackHearts = numBlackHearts + 2 end
