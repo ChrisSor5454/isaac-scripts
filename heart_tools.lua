@@ -155,18 +155,18 @@ function ht.GetHeartInfo(heartVal)
 end
 
 
---Returns table with information about a heart based on its index
+--Returns table with information about a heart based on its index on the players healthbar
 ---@param player EntityPlayer player who's heart is being evaluated
 ---@param heartIndex? integer starting from 1, heart to be evaluated. Leave as nil to return info table for all hearts
 ---@return table heartInfo table holding information about the heart
 function ht.GetPlayerHeartInfo(player, heartIndex)
     local heartTable = ht.GetHeartTable(player)
     local heartInfoTable = {}
-    if heartIndex ~= nil then
+    if heartIndex ~= nil then --Checks if heartIndex was provided
         local heart = heartTable[tonumber(heartIndex)]
         if heart == nil then print("[ERROR] Not a valid heart") return heartInfoTable end
         heartInfoTable = ht.GetHeartInfo(heart)
-    else
+    else --If a specific heartIndex was not provided, creates table containing subtables of info for all hearts
         for i,heart in heartTable do
             local heartInfo = ht.GetHeartInfo(heart)
             table.insert(heartInfoTable, i, heartInfo)
