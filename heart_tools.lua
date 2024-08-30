@@ -176,6 +176,43 @@ function ht.GetPlayerHeartInfo(player, heartIndex)
 end
 
 
+---@param heartTable table table containing enumerated values for each heart
+---@return table returnInfoTable table with subtables containing info for each heart
+function ht.IntToInfo(heartTable)
+    local returnInfoTable = {}
+    for i,heart in ipairs(heartTable) do
+        table.insert(returnInfoTable, i, ht.GetHeartInfo(heart))
+    end
+    return returnInfoTable
+end
+
+
+---@param heartInfoTable table table with subtables containing heartInfo
+---@return table returnHeartTable table table with enumerated numbers for each heart
+function ht.InfoToInt(heartInfoTable)
+    local returnHeartTable = {}
+    for i, heart in ipairs(heartInfoTable) do
+        local heartVal = 0 --Initializes variable to hold enumerated heart information
+        if heart.type == "red" then heartVal = heartVal | heartType.red --Checks the type of heart, setting it to the proper value
+        elseif heart.type == "soul" then heartVal = heartVal | heartType.soul
+        elseif heart.type == "black" then heartVal = heartVal | heartType.black
+        elseif heart.type == "bone" then heartVal = heartVal | heartType.bone
+        elseif heart.type == "broken" then heartVal = heartType.broken end
+        
+        if heart.state == "empty" then heartVal = heartVal | heartType.empty --Checks the state of the heart, setting it to the proper vaue
+        elseif heart.state == "half" then heartVal = heartVal | heartType.half
+        elseif heart.state == "full" then heartVal = heartVal | heartType.full
+        elseif heart.state == "rotten" then heartVal = heartVal | heartType.rotten
+        elseif heart.state == "broken" then heartVal = heartType.broken end
+
+        if heart.eternal == true then heartVal = heartVal | heartType.eternal end --Checks if the heart is eternal or golden
+        if heart.golden == true then heartVal = heartVal | heartType.golden end
+        table.insert(returnHeartTable, i, heartVal) --Inserts heart value into return table
+    end
+    return returnHeartTable
+end
+
+
 --Returns number of black hearts in a heartTable
 ---@param heartTable table heartTable to evaluate. Can be heartInfoTable or enumerated heartTable
 ---@return integer numBlackHearts number of black hearts found (1 = 1/2 black heart)
@@ -258,5 +295,8 @@ function ht.RestoreHearts(player, heartTable, additive, before)
         ht.RestoreHearts(player, tempHeartTable, true, false)
     end
 end
+
+
+
 
 return ht
